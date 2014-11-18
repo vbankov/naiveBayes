@@ -1,19 +1,5 @@
 # naivebayes
 
-naiveBayes algorithm
+nodeJS Naive Bayes classifier.
 
-[![build status](https://secure.travis-ci.org//naivebayes.png)](http://travis-ci.org//naivebayes)
-
-## Installation
-
-This module is installed via npm:
-
-``` bash
-$ npm install naivebayes
-```
-
-## Example Usage
-
-``` js
-var naiveBayes = require('naivebayes');
-```
+For educational purposes only, please do not to use any of this code in production.
