@@ -8,7 +8,7 @@ module.exports = function () {
   /**
    * @desc Given an input string, tokenize it into an array of word tokens and strip unwanted strings like `Subject`.
    * @param  {String} text
-   * @return {Array}  sanitized
+   * @return {Array} sanitized
    */
   NaiveBayes.prototype.defaultTokenizer = function (text) {
     /*remove punctuation from text - remove anything that isn't a word char or a space*/ 
@@ -28,8 +28,8 @@ module.exports = function () {
     return (filename.match(legitRegEx)!=null);
   }
   /* 
-   *  @desc Read file and save data to global matrix.
-   *  @param {String} filename
+   *  @desc Learn a word instance and save accordingly to data matrix
+   *  @param {String} word
    *  @param {Boolean} file legitStatus
    */
   NaiveBayes.prototype.learnWord = function (word,legitStatus){
@@ -56,7 +56,7 @@ module.exports = function () {
   }
   /* 
    *  @desc Count the total of words in the dictionary and save it to the global matrix. 
-   *        Breakdown is legit/spam/total 
+   *  @note Breakdown is legit/spam/total 
    */
   NaiveBayes.prototype.countWords = function(){
 
@@ -83,6 +83,10 @@ module.exports = function () {
 
    
   }
+  /* 
+   *  @desc Iterate over the words in a file and learn them.
+   *  @param {String} filename
+   */
   NaiveBayes.prototype.learnFile = function (filename){
     var text = fs.readFileSync(this.dir+filename,{encoding:'utf8'});
     var arrayOfTexts = this.defaultTokenizer(text);
@@ -92,7 +96,7 @@ module.exports = function () {
     }
   }
   /*
-   *  @desc   Precalculates the 
+   *  @desc   Precalculate the following data: 
    *          
    *          a-priori distribution
    *          
@@ -128,6 +132,10 @@ module.exports = function () {
       this.theMatrix.words[n].likelihood = {spam: qSpam, legit: qLegit}; 
     }
   }
+  /* 
+   *  @desc DevTool: Prints a human readable matrix of the words.
+   *  @note You really should not use this if there are many words
+   */
   NaiveBayes.prototype.printTables = function(){
     console.log('\n==== human readable matrix ====\n');
     console.log('\tWord\tSpam\tLegit\tTotal');
@@ -143,9 +151,20 @@ module.exports = function () {
     console.log('\n==== vocabulary ====\n');
     console.log(nb.vocabulary);
   }
-  NaiveBayes.prototype.testStats = function(){
 
+  /* 
+   *  TODO 
+   *  @desc Calculate the statistics of the tests.
+   */
+  NaiveBayes.prototype.testStats = function(){
+   // TODO 
+   // TODO 
+   // TODO 
   }
+
+  /*  
+   *  @desc Classify a message as legit or spam. If unknown, guess it is legit.
+   */
   NaiveBayes.prototype.classify = function(message){
 
     this.preCalculateProbs();
@@ -166,10 +185,6 @@ module.exports = function () {
         legitProbability *=  words[msgWord].likelihood.legit;
       }
     }
-    // console.log('=== probability of message being spam ===');
-    // console.log(spamProbability);
-    // console.log('=== probability of message being legit ===');
-    // console.log(legitProbability);
     if(spamProbability>legitProbability){
       return {class:'spam', probability: spamProbability,  probabilityNormalized: spamProbability/(spamProbability+legitProbability) , probabilitySpam: spamProbability, probabilityLegit: legitProbability};
     }else if(legitProbability>spamProbability){
@@ -179,7 +194,9 @@ module.exports = function () {
       return {class:'legit', probability: legitProbability, probabilitySpam: spamProbability, probabilityLegit: legitProbability};
     }
   }
-
+  /*  
+   *  @desc Main object definition and initialization
+   */
   function NaiveBayes(){
     console.log('\n ==== NaiveBayes classifier initialized ==== \n');
     // initialize an array to hold all words and an object to hold the matrix of data
@@ -197,6 +214,7 @@ module.exports = function () {
         spam : 0
       }
     };
+    // Base Directory for data. Note that this dir is not included in the repo.
     this.baseDir = './data/pu1/';
     this.messagesCount = 0;
     this.spamCount = 0;
