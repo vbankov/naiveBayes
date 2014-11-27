@@ -2,7 +2,12 @@
   "name": "naivebayes",
   "version": "1.0.0",
   "description": "naiveBayes algorithm",
-  "main": "index.js",
+  "main": "index.html",
+  "window": {
+    "toolbar": false,
+    "width": 660,
+    "height": 500
+  },
   "scripts": {
     "test": "node_modules/.bin/grunt ci"
   },
@@ -12,7 +17,7 @@
   },
   "keywords": [],
   "author": "Vasilis",
-  "license": "BSD-3-Clause",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com//naivebayes/issues"
   },

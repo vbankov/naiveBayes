@@ -1,4 +1,4 @@
-module.exports = function () {
+// module.exports = function () {
   // var http = require('http'),       // http library
       // mongojs = require('mongojs'), // mongo database
       fs = require('fs'),           // library to read files
@@ -6,7 +6,7 @@ module.exports = function () {
 
   
   /**
-   * @desc Given an input string, tokenize it into an array of word tokens and strip unwanted strings like `Subject`.
+   * @desc Given an input string, tokenize it into an array of word tokens and strip unwanted strings like `Subject` or empty strings.
    * @param  {String} text
    * @return {Array} sanitized
    */
@@ -153,14 +153,94 @@ module.exports = function () {
   }
 
   /* 
-   *  TODO 
-   *  @desc Calculate the statistics of the tests.
+   *  @desc Calculate the statistics of the tests run and save them to the matrix
    */
   NaiveBayes.prototype.testStats = function(){
-   // TODO 
-   // TODO 
-   // TODO 
-  }
+    if(typeof this.test === 'undefined'){
+      console.log('\n==== testStats:: No tests run yet.');
+      return 1;
+    }
+    var gotIt = 0,
+        failed = 0,
+        filesTested = 0,
+        totalTrueLegit = 0,
+        totalTrueSpam = 0,
+        classifiedAsLegit = 0,
+        classifiedAsSpam = 0,
+        classifiedAsLegitIsLegit = 0,
+        classifiedAsLegitIsSpam = 0,
+        classifiedAsSpamIsLegit = 0,
+        classifiedAsSpamIsSpam = 0;
+    for(var i in this.test){
+      if(this.test[i].class == 'legit'){
+        // classified as is legit
+        classifiedAsLegit++;
+        if(this.test[i].shouldBeClass == 'legit'){
+          // classified as legit and is legit
+          totalTrueLegit++;
+          classifiedAsLegitIsLegit++;
+        }else{
+          // classified as legit and is spam;
+          totalTrueSpam++;
+          classifiedAsLegitIsSpam++;
+        }
+      }else{
+        // classified as spam
+        classifiedAsSpam++;
+        if(this.test[i].shouldBeClass == 'spam'){
+          // classified as spam and is spam
+          totalTrueSpam++;
+          classifiedAsSpamIsSpam++;
+        }else{
+          // classified as spam is legit;
+          totalTrueLegit++;
+          classifiedAsSpamIsLegit++;
+        }
+      }
+      if( this.test[i].class == this.test[i].shouldBeClass ){
+        gotIt++;
+      }else{
+        failed++;
+      }
+      filesTested++;
+    }
+    var percentageGotIt = gotIt / (gotIt+failed),
+        percentageFailed = failed / (gotIt+failed);
+    this.theMatrix.testResults.gotIt = gotIt;
+    this.theMatrix.testResults.failed = failed;
+    this.theMatrix.testResults.percentageGotIt = percentageGotIt;
+    this.theMatrix.testResults.percentageFailed = percentageFailed;
+    this.theMatrix.testResults.messagesTested = filesTested;
+    console.log('\n\n==== Test Results ===');
+    console.log('\t Files tested: \t'+filesTested+'\t\tDictionary size: \t'+this.theMatrix.wordCount.total);
+    console.log('\t Got it: \t'+gotIt+'\t'+(percentageGotIt*100)+'%');
+    console.log('\t Failed: \t'+failed+'\t'+(percentageFailed*100)+'%');
+    
+    // Spam recall: (correctly identified spam messages) / (total spam messages)
+    var spamRecall = classifiedAsSpamIsSpam / totalTrueSpam;
+    
+    // Spam precision: (correctly identified spam messages) / (total messages identified as spam)
+    var spamPrecision = classifiedAsSpamIsSpam / classifiedAsSpam ;
+    
+    return {
+              totalTrueLegit: totalTrueLegit,
+              totalTrueSpam: totalTrueSpam,
+              classifiedAsLegit: classifiedAsLegit,
+              classifiedAsSpam: classifiedAsSpam,
+              classifiedAsLegitIsLegit: classifiedAsLegitIsLegit,
+              classifiedAsLegitIsSpam: classifiedAsLegitIsSpam,
+              classifiedAsSpamIsLegit: classifiedAsSpamIsLegit,
+              classifiedAsSpamIsSpam: classifiedAsSpamIsSpam,
+              spamRecall: spamRecall, 
+              spamPrecision: spamPrecision,
+              gotIt: gotIt, 
+              failed: failed, 
+              percentageGotIt:percentageGotIt, 
+              percentageFailed:percentageFailed, 
+              filesTested:filesTested 
+            };
+            
+  };
 
   /*  
    *  @desc Classify a message as legit or spam. If unknown, guess it is legit.
@@ -197,7 +277,7 @@ module.exports = function () {
   /*  
    *  @desc Main object definition and initialization
    */
-  function NaiveBayes(){
+  function NaiveBayes(exclude){
     console.log('\n ==== NaiveBayes classifier initialized ==== \n');
     // initialize an array to hold all words and an object to hold the matrix of data
     this.vocabulary = [];
@@ -212,6 +292,13 @@ module.exports = function () {
         total : 0,
         legit : 0,
         spam : 0
+      },
+      testResults:{
+        gotIt: 0,
+        failed: 0,
+        messagesTested: 0,
+        spamRecall: 0,
+        spamPrecision: 0,
       }
     };
     // Base Directory for data. Note that this dir is not included in the repo.
@@ -223,53 +310,150 @@ module.exports = function () {
     /*
      *  THIS IS THE MAIN ROUTINE OF READING THE FILES
      */
-
+/*
     for(var dataPart=1;dataPart<=9;dataPart++){
       this.dir = this.baseDir+'part'+dataPart+'/';
       var files = fs.readdirSync(this.dir);
-          this.messagesCount+=files.length;
-
+          this.messagesCount[dataPart] = files.length;
+          var lCount=0;
       for(var i in files){
         this.learnFile(files[i]);
-        if(this.isLegit(files[i])) this.legitCount++;
+        if(this.isLegit(files[i])) lCount++;
       }
-      this.spamCount = this.messagesCount - this.legitCount;
+      this.spamCount[dataPart] = this.messagesCount[dataPart] - this.legitCount;
     }  
 
     this.countWords();
-
+*/
     
-  }
-  var tic = new Date().getTime(); // Start timer
-  var nb = new NaiveBayes();
+    /*
+     *  THIS IS THE MAIN ROUTINE OF READING THE FILES
+     */
 
-  // nb.printTables();
-  /*
-   *  THIS IS THE MAIN ROUTINE OF CLASSIFICATION OF TEST MESSAGES
+    for(var dataPart=1;dataPart<=10;dataPart++){
+      if(dataPart!=exclude){
+        this.dir = this.baseDir+'part'+dataPart+'/';
+        var files = fs.readdirSync(this.dir);
+            this.messagesCount+=files.length;
+
+        for(var i in files){
+          this.learnFile(files[i]);
+          if(this.isLegit(files[i])) this.legitCount++;
+        }
+        this.spamCount = this.messagesCount - this.legitCount;
+
+      }
+    }  
+    this.countWords();
+
+  }
+  
+
+  /* 
+   *  @desc Main routine for testing all messages in the test set
    */
-  console.log('\n ==== Classification of Test messages initialized ==== \n');
-
-  var toc = (new Date().getTime() - tic)/1000; // End timer
-  console.log('Time so far ' + Math.round(toc*100)/100 + 'secs');
-
-  nb.testDir = nb.baseDir+'part10/';
-  test = {};
-  var testFiles = fs.readdirSync(nb.testDir);
-      nb.testCount+=testFiles.length;
-  for(var i in testFiles){
-    var testMessage = nb.defaultTokenizer(fs.readFileSync(nb.testDir+testFiles[i],{encoding:'utf8'}));
-    var classification = nb.classify(testMessage);
-    var shouldBeClass = nb.isLegit(testFiles[i]) ? 'legit':'spam';
-    console.log('\n==== classify message `'+testFiles[i]+'` ==== \n');
-    console.log(classification);
-    test[testFiles[i]] = {testMessage:testFiles[i], class: classification.class, shouldBeClass: shouldBeClass, classificationData: classification};
+  NaiveBayes.prototype.doTest = function(testPart) {
+    this.testDir = this.baseDir+'part'+testPart+'/';
+    this.test = {};
+    var testFiles = fs.readdirSync(this.testDir);
+        this.testCount+=testFiles.length;
+    for(var i in testFiles){
+      var testMessage = this.defaultTokenizer(fs.readFileSync(this.testDir+testFiles[i],{encoding:'utf8'}));
+      var classification = this.classify(testMessage);
+      var shouldBeClass = this.isLegit(testFiles[i]) ? 'legit':'spam';
+      this.test[testFiles[i]] = {testMessage:testFiles[i], class: classification.class, shouldBeClass: shouldBeClass, classificationData: classification};
+    }
   }
-  console.log('\n==== All messages ====\n');
-  console.log(test);
 
-  var toc = (new Date().getTime() - tic)/1000; // End timer
-  console.log('\n\nTime taken ' + Math.round(toc*100)/100 + 'secs');
-  console.log()
-};
+  var nb, test = {};
 
-module.exports(); // fire the module
+  function GO(){
+    var tic = new Date().getTime(); // Start timer
+    for(var z=1;z<=10;z++){
+      console.log('\n ==== Cross-validation '+z+' of 10 ==== \n');
+      $('#current-state').html('Cross-validation '+z+' of 10'+'<br>');
+      var nb = new NaiveBayes(z);
+      nb.doTest(z);
+      /*
+       *  THIS IS THE MAIN ROUTINE OF CLASSIFICATION OF TEST MESSAGES
+       */
+      console.log('\n ==== Classification of Test messages initialized ==== \n');
+      var learningTime = (new Date().getTime() - tic)/1000; // End timer
+      
+      var toc = (new Date().getTime() - tic)/1000; // End timer
+      var classifyingTime = toc - learningTime;
+      $('#time-text').html('Time spent learning: '+ Math.round(learningTime*10000)/10000 + 'secs'+'<br>');
+      $('#time-text').append('Time spent classifying: '+ Math.round(classifyingTime*10000)/10000 + 'secs'+'<br>');
+      $('#time-text').append('Total time: '+ Math.round(toc*10000)/10000 + 'secs');
+      
+      console.log('Time spent learning ' + Math.round(learningTime*10000)/10000 + 'secs');
+      console.log('Time spent classifying ' + Math.round(classifyingTime*10000)/10000 + 'secs');
+      console.log('Total time ' + Math.round(toc*10000)/10000 + 'secs');
+
+
+
+      // nb.testStats();
+      test["cross-"+z] = nb.testStats();
+    }
+    // Get average of tests
+    var average = {
+      percentageGotIt: 0, 
+      percentageFailed: 0, 
+      spamPrecision: 0, 
+      spamRecall: 0, 
+    };
+    for(var i in test){
+      average.percentageGotIt += test[i].percentageGotIt;
+      average.percentageFailed += test[i].percentageFailed;
+      average.spamPrecision += test[i].spamPrecision;
+      average.spamRecall += test[i].spamRecall;
+    }
+    average.percentageGotIt=average.percentageGotIt/10;
+    average.percentageFailed=average.percentageFailed/10;
+    average.spamPrecision=average.spamPrecision/10;
+    average.spamRecall=average.spamRecall/10;
+    $('#test-results').html('Averages'+'<br>'+
+      'success: '+Math.round(average.percentageGotIt*10000)/100+'%<br>'+
+      'fail: '+Math.round(average.percentageFailed*10000)/100+'%<br>'+
+      'spamPrecision: '+Math.round(average.spamPrecision*10000)/100+'%<br>'+
+      'spamRecall: '+Math.round(average.spamRecall*10000)/100+'%<br>'
+    );
+
+    $("#json-holder").JSONView(test,{collapsed: true});
+    $('#click-here').text('Initialize');
+  }
+  function goOLD(){
+
+    var tic = new Date().getTime(); // Start timer
+    nb = new NaiveBayes();
+    // nb.printTables();
+
+    /*
+     *  THIS IS THE MAIN ROUTINE OF CLASSIFICATION OF TEST MESSAGES
+     */
+    console.log('\n ==== Classification of Test messages initialized ==== \n');
+
+    var toc = (new Date().getTime() - tic)/1000; // End timer
+    console.log('Time so far ' + Math.round(toc*100)/100 + 'secs');
+
+    nb.testDir = nb.baseDir+'part10/';
+    
+    var testFiles = fs.readdirSync(nb.testDir);
+        nb.testCount+=testFiles.length;
+    for(var i in testFiles){
+      var testMessage = nb.defaultTokenizer(fs.readFileSync(nb.testDir+testFiles[i],{encoding:'utf8'}));
+      var classification = nb.classify(testMessage);
+      var shouldBeClass = nb.isLegit(testFiles[i]) ? 'legit':'spam';
+      console.log('\n==== classify message `'+testFiles[i]+'` ==== \n');
+      console.log(classification);
+      test[testFiles[i]] = {testMessage:testFiles[i], class: classification.class, shouldBeClass: shouldBeClass, classificationData: classification};
+    }
+    console.log('\n==== All messages ====\n');
+    console.log(test);
+    var toc = (new Date().getTime() - tic)/1000; // End timer
+    console.log('\n\nTime taken ' + Math.round(toc*100)/100 + 'secs');
+  
+  };
+// };
+
+// module.exports(); // fire the module
