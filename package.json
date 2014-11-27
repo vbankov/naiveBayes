@@ -22,7 +22,6 @@
     "url": "https://github.com//naivebayes/issues"
   },
   "dependencies": {
-    "mongojs": "^0.17.0",
     "underscore": "^1.7.0"
   },
   "devDependencies": {
